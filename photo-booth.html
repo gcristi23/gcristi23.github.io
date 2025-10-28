@@ -2,171 +2,71 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Photo Overlay App</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #f0f4f8, #d9e2ec);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Double Photo Frame</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      background: #eef2f6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+    }
 
-        header {
-            width: 100%;
-            background-color: #4a90e2;
-            color: white;
-            text-align: center;
-            padding: 1rem 0;
-            font-size: 1.5rem;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
+    header {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: #3366cc;
+    }
 
-        main {
-            width: 95%;
-            max-width: 500px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 1rem;
-            background: white;
-            border-radius: 1rem;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            padding: 1rem;
-        }
+    #canvas {
+      width: 100%;
+      max-width: 600px;
+      border: 2px dashed #ccc;
+      border-radius: 10px;
+    }
 
-        #canvas {
-            width: 100%;
-            border-radius: 0.5rem;
-            border: 2px dashed #ccc;
-            margin-bottom: 1rem;
-        }
+    .controls {
+      margin: 1rem 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+    }
 
-        .controls {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-bottom: 1rem;
-        }
+    button,
+    input[type="file"] {
+      background-color: #3366cc;
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+    }
 
-        button,
-        input[type="file"] {
-            background-color: #4a90e2;
-            color: white;
-            border: none;
-            border-radius: 0.5rem;
-            padding: 0.75rem 1rem;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-
-        button:hover,
-        input[type="file"]:hover {
-            background-color: #3b7ccc;
-        }
-
-        footer {
-            margin-top: auto;
-            padding: 1rem;
-            color: #666;
-            font-size: 0.9rem;
-        }
-    </style>
+    button:hover {
+      background-color: #295bb5;
+    }
+  </style>
 </head>
 
 <body>
-    <header>📸 Photo Overlay App</header>
+  <header>📸 Double Photo Frame</header>
 
-    <main>
-        <input type="file" accept="image/*" capture="environment" id="fileInput">
-        <canvas id="canvas"></canvas>
+  <div class="controls">
+    <input type="file" accept="image/*" capture="environment" id="photo1">
+    <input type="file" accept="image/*" capture="environment" id="photo2">
+    <button id="combineBtn">Combine</button>
+    <button id="printBtn">Print</button>
+    <button id="downloadBtn">Download</button>
+  </div>
 
-        <div class="controls">
-            <button id="overlayBtn">Add Overlay</button>
-            <button id="printBtn">Print Photo</button>
-            <button id="clearBtn">Clear</button>
-        </div>
-    </main>
+  <canvas id="canvas"></canvas>
 
-    <footer>Made with ❤️ using JavaScript</footer>
-
-    <script>
-        const fileInput = document.getElementById('fileInput');
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        let currentImage = null;
-        let overlayImage = new Image();
-        overlayImage.src = './assets/overlay.png';
-        let overlayAdded = false;
-
-        fileInput.addEventListener('change', e => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const img = new Image();
-            img.onload = () => {
-                const scale = Math.min(500 / img.width, 500 / img.height);
-                canvas.width = img.width * scale;
-                canvas.height = img.height * scale;
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                currentImage = img;
-                overlayAdded = false;
-            };
-            img.src = URL.createObjectURL(file);
-        });
-
-        document.getElementById('overlayBtn').onclick = () => {
-            if (!currentImage) return alert('Please upload or take a photo first.');
-            if (overlayAdded) return alert('Overlay already added!');
-
-            overlayImage.onload = () => {
-                // Draw overlay scaled to fit
-                ctx.drawImage(overlayImage, 0, 0, canvas.width, canvas.height);
-                overlayAdded = true;
-            };
-
-            // If already loaded, draw immediately
-            if (overlayImage.complete) {
-                ctx.drawImage(overlayImage, 0, 0, canvas.width, canvas.height);
-                overlayAdded = true;
-            }
-        };
-
-        document.getElementById('printBtn').onclick = () => {
-            if (!currentImage) return alert('No photo to print.');
-            const imgData = canvas.toDataURL('image/jpeg');
-            const newWin = window.open("");
-
-            image = document.createElement('img');
-            image.src = imgData;
-            image.style.width = '100%';
-
-            const body = newWin.document.getElementsByTagName('body')[0];
-            body.style.margin = '0';
-            body.appendChild(image);
-            image.onload = () => {
-                newWin.print();
-            };
-
-            newWin.onafterprint = () => {
-                newWin.close();
-                };
-
-        };
-
-        document.getElementById('clearBtn').onclick = () => {
-            if (!currentImage) return;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
-            overlayAdded = false;
-        };
-    </script>
+  <script src="photo-booth.js"></script>
+ 
 </body>
 
 </html>
