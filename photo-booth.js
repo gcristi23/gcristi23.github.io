@@ -99,7 +99,7 @@ function fetchOverlayList() {
         })
         .catch(() => {
             // fallback: try common file names
-            return ["Failed to load overlay list from server."];
+            return ["og.png", "par.png", "hs.png"];
         });
 }
 
