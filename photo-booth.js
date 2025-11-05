@@ -17,9 +17,102 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
 let img1 = null, img2 = null;
+// Overlay selector + dynamic loader
 let overlay = new Image();
 overlay.crossOrigin = "anonymous";
-overlay.src = './assets/overlay.png';
+
+const OVERLAY_DIR = './assets/overlays/';
+const OVERLAY_EXT_RE = /\.(png|jpe?g|webp|svg)$/i;
+
+// create/select a <select id="overlaySelect"> in the DOM (insert before combineBtn)
+let overlaySelect = document.getElementById('overlaySelect');
+if (!overlaySelect) {
+    const label = document.createElement('label');
+    label.textContent = 'Overlay: ';
+    label.htmlFor = 'overlaySelect';
+
+    overlaySelect = document.createElement('select');
+    overlaySelect.id = 'overlaySelect';
+
+    // Insert the label+select before the combine button
+    combineBtn.parentNode.insertBefore(label, combineBtn);
+    combineBtn.parentNode.insertBefore(overlaySelect, combineBtn);
+}
+
+// populate the select with filenames and wire change handler
+function populateOverlaySelect(files) {
+    overlaySelect.innerHTML = '';
+    files.forEach((f, i) => {
+        const opt = document.createElement('option');
+        opt.value = f;
+        opt.textContent = f;
+        overlaySelect.appendChild(opt);
+    });
+    // pick first by default and load it
+    if (files.length) {
+        overlaySelect.value = files[0];
+        setOverlaySrc(buildOverlayPath(files[0]));
+    }
+}
+
+function buildOverlayPath(filename) {
+    // if filename looks like an absolute/relative URL already, use it
+    if (/^(https?:|\/)/i.test(filename)) return filename;
+    return OVERLAY_DIR + filename;
+}
+
+function setOverlaySrc(path) {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+        overlay = img;
+        // if both photos already loaded, refresh canvas
+        if (img1 && img2) generateImage();
+    };
+    img.onerror = () => {
+        console.warn('Failed to load overlay:', path);
+    };
+    img.src = path;
+}
+
+// Try to fetch directory listing (works on servers that expose index pages).
+// Fallback to a small default list if not available.
+function fetchOverlayList() {
+    return fetch(OVERLAY_DIR, { method: 'GET' })
+        .then(r => {
+            if (!r.ok) throw new Error('no dir listing');
+            return r.text();
+        })
+        .then(text => {
+            // try to extract hrefs for image files from returned HTML
+            const matches = [...text.matchAll(/href=["']?([^"'>\s]+)["']?/gi)];
+            const files = matches
+                .map(m => m[1])
+                .filter(h => OVERLAY_EXT_RE.test(h))
+                .map(h => {
+                    // normalize: if href is full path keep it, else strip directory parts
+                    const parts = h.split('/').filter(Boolean);
+                    return parts[parts.length - 1];
+                });
+            // dedupe
+            return [...new Set(files)];
+        })
+        .catch(() => {
+            // fallback: try common file names
+            return ["Failed to load overlay list from server."];
+        });
+}
+
+// load overlays and populate selector
+fetchOverlayList().then(list => {
+    if (!list || list.length === 0) list = ['overlay.png'];
+    populateOverlaySelect(list);
+});
+
+// handle user changing overlay
+overlaySelect.addEventListener('change', e => {
+    setOverlaySrc(buildOverlayPath(e.target.value));
+});
 
 // Load both photos
 photo1Input.addEventListener('change', e => loadPhoto(e.target.files[0], 1));
